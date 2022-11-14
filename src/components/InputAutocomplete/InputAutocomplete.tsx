@@ -1,6 +1,6 @@
 import { AutocompleteOption } from "./InputAutocomplete.types";
 import "./InputAutocomplete.css";
-import { useId, useMemo, useRef, useState } from "react";
+import React, { useCallback, useId, useMemo, useRef, useState } from "react";
 import { default as BCN } from "../../functions/buildClassNames";
 
 /**
@@ -8,7 +8,9 @@ import { default as BCN } from "../../functions/buildClassNames";
  * @property options - array of options for the autocomplete function
  * @property classes - array of custom classes to be passed to the component
  * @property placeholder - placeholder text for the input element
- * @property loading - when true, the the list will contain a loading animation element. Useful if you are dynamically fetching the options list.
+ * @property loading - if true, the the list will contain a loading animation element. Useful if you are dynamically fetching the options list.
+ * @property errorInput - if true, the -input-error styling will be applied to the input element
+ * @property errorList - if true, autocomplete list will show "Error". This message is overwritten if you define a string instead of bool.
  * @property sortMethod - a function to be applied for shorting the matched options
  * @property onInputChange - triggered when the input changes
  * @property onSelect - the function to run when an item is selected from the list.
@@ -20,6 +22,8 @@ const InputAutocomplete: React.FC<{
   classes?: string[];
   placeholder?: string;
   loading?: boolean;
+  errorInput?: boolean;
+  errorList?: string | boolean;
   sortMethod?: (a: AutocompleteOption, b: AutocompleteOption) => number;
   onInputChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSelect?: (selectedOption: AutocompleteOption) => void;
@@ -29,6 +33,8 @@ const InputAutocomplete: React.FC<{
   options,
   placeholder,
   loading,
+  errorInput,
+  errorList,
   classes = [],
   sortMethod,
   onInputChange,
@@ -40,7 +46,7 @@ const InputAutocomplete: React.FC<{
 
   const [input, setInput] = useState<string>("");
   const id = "InputAutocomplete" + useId();
-
+  const baseClass = "inputAutocomplete";
   const refComponent = useRef<HTMLDivElement>(null);
 
   const filteredOptions = useMemo(() => {
@@ -63,24 +69,101 @@ const InputAutocomplete: React.FC<{
     setInput(option.label);
   };
 
-  const onSelectHandler = (option: AutocompleteOption) => {
-    if (option.onSelect) {
-      option.onSelect(option);
-    } else {
-      if (onSelect) {
-        onSelect(option);
+  const onSelectHandler = useCallback(
+    (option: AutocompleteOption) => {
+      if (option.onSelect) {
+        option.onSelect(option);
       } else {
-        onSelectDefault(option);
+        if (onSelect) {
+          onSelect(option);
+        } else {
+          onSelectDefault(option);
+        }
       }
+      setListOpen(false);
+    },
+    [onSelect]
+  );
+
+  const autocompleteList = useMemo(() => {
+    const listWrapper = (child: React.ReactNode) => (
+      <div
+        className={BCN("-list", [baseClass, ...classes])}
+        style={{ top: refComponent.current?.offsetHeight.valueOf() }}
+      >
+        {child}
+      </div>
+    );
+
+    if (loading || errorList || filteredOptions.length === 0) {
+      let postfix = "";
+      let text = "";
+      switch (true) {
+        case (typeof errorList === "boolean" && errorList) ||
+          (typeof errorList === "string" && errorList.length > 0):
+          postfix = "-list-element-error";
+
+          if (typeof errorList === "string") {
+            text = errorList;
+          } else {
+            text = "Error";
+          }
+
+          break;
+        case loading:
+          postfix = "-list-element-loading";
+          break;
+        case filteredOptions.length === 0:
+          postfix = "-list-element-noResults";
+          text = "No results";
+          break;
+      }
+
+      return listWrapper(
+        <div
+          className={BCN(postfix, [baseClass, ...classes])}
+          style={{ top: refComponent.current?.offsetHeight.valueOf() }}
+        >
+          {text}
+        </div>
+      );
+    } else {
+      return listWrapper(
+        filteredOptions.map((o) => (
+          <div
+            autocomplete-key={o.key || o.label}
+            onMouseDown={(e) => {
+              //onMouseDown instead of onClick to execute before onBlur unfocus
+              e.stopPropagation();
+              onSelectHandler(o);
+            }}
+            key={o.key || o.label}
+            className={BCN("-list-element", [baseClass, ...classes])}
+          >
+            <span
+              className={BCN("-list-element-label", [baseClass, ...classes])}
+            >
+              {o.label}
+            </span>
+            <span
+              className={BCN("-list-element-labelSecondary", [
+                baseClass,
+                ...classes,
+              ])}
+            >
+              {o.labelSecondary}
+            </span>
+          </div>
+        ))
+      );
     }
-    setListOpen(false);
-  };
+  }, [loading, errorList, filteredOptions, onSelectHandler, classes]);
 
   return (
     <div
       ref={refComponent}
       className={
-        BCN("", ["inputAutocomplete", ...classes]) +
+        BCN("", [baseClass, ...classes]) +
         (darkMode
           ? " inputAutocomplete-styleDark"
           : " inputAutocomplete-styleLight")
@@ -89,7 +172,10 @@ const InputAutocomplete: React.FC<{
       onBlur={() => setListOpen(false)}
     >
       <input
-        className={BCN("-input", ["inputAutocomplete", ...classes])}
+        className={
+          BCN("-input", [baseClass, ...classes]) +
+          (errorInput ? BCN("-input-error", [baseClass, ...classes]) : "")
+        }
         placeholder={placeholder}
         onChange={(e) => {
           setInput(e.currentTarget.value);
@@ -108,64 +194,7 @@ const InputAutocomplete: React.FC<{
         }}
         value={input}
       ></input>
-      {listOpen && (
-        <div
-          className={BCN("-list", ["inputAutocomplete", ...classes])}
-          style={{ top: refComponent.current?.offsetHeight.valueOf() }}
-        >
-          {loading && (
-            <div
-              className={BCN("-list-element-loading", [
-                "inputAutocomplete",
-                ...classes,
-              ])}
-            ></div>
-          )}
-          {!loading &&
-            filteredOptions.map((o) => (
-              <div
-                autocomplete-key={o.key || o.label}
-                onMouseDown={(e) => {
-                  //onMouseDown instead of onClick to execute before onBlur unfocus
-                  e.stopPropagation();
-                  onSelectHandler(o);
-                }}
-                key={o.key || o.label}
-                className={BCN("-list-element", [
-                  "inputAutocomplete",
-                  ...classes,
-                ])}
-              >
-                <span
-                  className={BCN("-list-element-label", [
-                    "inputAutocomplete",
-                    ...classes,
-                  ])}
-                >
-                  {o.label}
-                </span>
-                <span
-                  className={BCN("-list-element-labelSecondary", [
-                    "inputAutocomplete",
-                    ...classes,
-                  ])}
-                >
-                  {o.labelSecondary}
-                </span>
-              </div>
-            ))}
-          {!loading && filteredOptions.length === 0 && (
-            <div
-              className={BCN("-list-element-noResults", [
-                "inputAutocomplete",
-                ...classes,
-              ])}
-            >
-              No results
-            </div>
-          )}
-        </div>
-      )}
+      {listOpen && autocompleteList}
     </div>
   );
 };
