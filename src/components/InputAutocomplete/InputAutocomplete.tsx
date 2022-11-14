@@ -24,6 +24,7 @@ const InputAutocomplete: React.FC<{
   onInputChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSelect?: (selectedOption: AutocompleteOption) => void;
   darkMode?: boolean;
+  minCharacterCount?: number;
 }> = ({
   options,
   placeholder,
@@ -33,6 +34,7 @@ const InputAutocomplete: React.FC<{
   onInputChange,
   onSelect,
   darkMode,
+  minCharacterCount,
 }) => {
   const [listOpen, setListOpen] = useState<boolean>(false);
 
@@ -93,7 +95,16 @@ const InputAutocomplete: React.FC<{
           setInput(e.currentTarget.value);
 
           if (onInputChange) onInputChange(e);
-          setListOpen(true);
+
+          if (minCharacterCount) {
+            if (e.currentTarget.value.length >= minCharacterCount) {
+              setListOpen(true);
+            } else {
+              setListOpen(false);
+            }
+          } else {
+            setListOpen(true);
+          }
         }}
         value={input}
       ></input>
