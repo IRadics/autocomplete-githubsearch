@@ -89,6 +89,7 @@ const InputAutocomplete: React.FC<{
   const autocompleteList = useMemo(() => {
     const listWrapper = (child: React.ReactNode) => (
       <div
+        data-testid="list"
         className={BCN("-list", [baseClass, ...classes])}
         style={{ top: refComponent.current?.offsetHeight.valueOf() }}
       >
@@ -162,6 +163,7 @@ const InputAutocomplete: React.FC<{
 
   return (
     <div
+      data-testid="main"
       ref={refComponent}
       className={
         BCN("", [baseClass, ...classes]) +
@@ -173,6 +175,7 @@ const InputAutocomplete: React.FC<{
       onBlur={() => setListOpen(false)}
     >
       <input
+        data-testid="input"
         className={
           BCN("-input", [baseClass, ...classes]) +
           (errorInput ? BCN("-input-error", [baseClass, ...classes]) : "")
