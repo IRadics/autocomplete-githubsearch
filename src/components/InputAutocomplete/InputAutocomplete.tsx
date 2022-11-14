@@ -20,6 +20,7 @@ import { default as BCN } from "../../functions/buildClassNames";
 const InputAutocomplete: React.FC<{
   options: AutocompleteOption[];
   classes?: string[];
+  id?: string;
   placeholder?: string;
   loading?: boolean;
   errorInput?: boolean;
@@ -36,6 +37,7 @@ const InputAutocomplete: React.FC<{
   errorInput,
   errorList,
   classes = [],
+  id,
   sortMethod,
   onInputChange,
   onSelect,
@@ -45,7 +47,6 @@ const InputAutocomplete: React.FC<{
   const [listOpen, setListOpen] = useState<boolean>(false);
 
   const [input, setInput] = useState<string>("");
-  const id = "InputAutocomplete" + useId();
   const baseClass = "inputAutocomplete";
   const refComponent = useRef<HTMLDivElement>(null);
 
