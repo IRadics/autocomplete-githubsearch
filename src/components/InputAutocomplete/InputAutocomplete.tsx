@@ -7,6 +7,7 @@ import { default as BCN } from "../../functions/buildClassNames";
  * Input field with an autocomplete functionality which lists all the matching options based on the input provided
  * @property options - array of options for the autocomplete function
  * @property classes - array of custom classes to be passed to the component
+ * @property id - CSS id passed to the component
  * @property placeholder - placeholder text for the input element
  * @property loading - if true, the the list will contain a loading animation element. Useful if you are dynamically fetching the options list.
  * @property errorInput - if true, the -input-error styling will be applied to the input element
@@ -14,6 +15,8 @@ import { default as BCN } from "../../functions/buildClassNames";
  * @property sortMethod - a function to be applied for shorting the matched options
  * @property onInputChange - triggered when the input changes
  * @property onSelect - the function to run when an item is selected from the list.
+ * @property darkMode - if true, dark mode CSS class(es) is applied (-styleLight / -styleDark)
+ * @property minCharacterCount - defines the minimum characters to type to open the autocomplete list
  * - default: the input field is filled by the selected option.
  * - note: Separate onSelect function provided for the selected option overwrites this behaviour.
  */
