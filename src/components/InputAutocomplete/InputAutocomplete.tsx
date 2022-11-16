@@ -1,7 +1,14 @@
 import { AutocompleteOption } from "./InputAutocomplete.types";
 import "./InputAutocomplete.css";
-import React, { useCallback, useId, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { default as BCN } from "../../functions/buildClassNames";
+import clamp from "../../functions/clamp";
 
 /**
  * Input field with an autocomplete functionality which lists all the matching options based on the input provided
@@ -48,10 +55,17 @@ const InputAutocomplete: React.FC<{
   minCharacterCount,
 }) => {
   const [listOpen, setListOpen] = useState<boolean>(false);
-
   const [input, setInput] = useState<string>("");
+  const [cursorIndex, setCursorIndex] = useState<number>(-1);
   const baseClass = "inputAutocomplete";
   const refComponent = useRef<HTMLDivElement>(null);
+  const refSelectedListElement = useRef<HTMLDivElement>(null);
+
+  const openList = useCallback((open: boolean) => {
+    setListOpen(open);
+    //clear selection
+    selectItem(-1);
+  }, []);
 
   const filteredOptions = useMemo(() => {
     if (sortMethod) {
@@ -84,10 +98,68 @@ const InputAutocomplete: React.FC<{
           onSelectDefault(option);
         }
       }
-      setListOpen(false);
+      openList(false);
     },
-    [onSelect]
+    [onSelect, openList]
   );
+
+  const selectItem = (index: number, scrollIntoView: boolean = false) => {
+    setCursorIndex(index);
+    //refSelectedListElement.current?.scrollIntoView check needs as it would otherwise fail in unit test for some reason
+    if (scrollIntoView && refSelectedListElement.current?.scrollIntoView)
+      //block "center" to account for the fact that the cursor change will happen only in the next render.
+      refSelectedListElement.current?.scrollIntoView({ block: "center" });
+  };
+
+  const onKeyDownHandler = useCallback(
+    (e: KeyboardEvent) => {
+      if (!listOpen) return;
+
+      e.stopPropagation();
+      switch (e.key) {
+        case "ArrowDown": {
+          selectItem(
+            clamp(cursorIndex + 1, 0, filteredOptions.length - 1),
+            true
+          );
+          e.preventDefault();
+          break;
+        }
+        case "ArrowUp": {
+          selectItem(
+            clamp(cursorIndex - 1, 0, filteredOptions.length - 1),
+            true
+          );
+          e.preventDefault();
+          break;
+        }
+
+        case "Enter":
+        case "Return": {
+          if (cursorIndex >= 0) {
+            onSelectHandler(filteredOptions[cursorIndex]);
+            e.preventDefault();
+          }
+          break;
+        }
+        case "Escape": {
+          openList(false);
+          break;
+        }
+      }
+    },
+    [cursorIndex, filteredOptions, onSelectHandler, listOpen, openList]
+  );
+
+  useEffect(() => {
+    const component = refComponent.current;
+    component?.addEventListener("keydown", onKeyDownHandler);
+    return () => component?.removeEventListener("keydown", onKeyDownHandler);
+  }, [onKeyDownHandler]);
+
+  const listOnMouseOverHandler = useCallback((index: number) => {
+    selectItem(index);
+  }, []);
 
   const autocompleteList = useMemo(() => {
     const listWrapper = (child: React.ReactNode) => (
@@ -134,16 +206,24 @@ const InputAutocomplete: React.FC<{
       );
     } else {
       return listWrapper(
-        filteredOptions.map((o) => (
+        filteredOptions.map((o, index) => (
           <div
             autocomplete-key={o.key || o.label}
+            //pass the selectedListElement ref if it's the selected element
+            ref={index === cursorIndex ? refSelectedListElement : null}
             onMouseDown={(e) => {
               //onMouseDown instead of onClick to execute before onBlur unfocus
               e.stopPropagation();
               onSelectHandler(o);
             }}
+            onMouseOver={() => listOnMouseOverHandler(index)}
             key={o.key || o.label}
-            className={BCN("-list-element", [baseClass, ...classes])}
+            className={
+              BCN("-list-element", [baseClass, ...classes]) +
+              (index === cursorIndex
+                ? BCN("-list-element-cursor", [baseClass, ...classes])
+                : "")
+            }
           >
             <span
               className={BCN("-list-element-label", [baseClass, ...classes])}
@@ -162,7 +242,15 @@ const InputAutocomplete: React.FC<{
         ))
       );
     }
-  }, [loading, errorList, filteredOptions, onSelectHandler, classes]);
+  }, [
+    loading,
+    errorList,
+    filteredOptions,
+    onSelectHandler,
+    classes,
+    cursorIndex,
+    listOnMouseOverHandler,
+  ]);
 
   return (
     <div
@@ -175,7 +263,7 @@ const InputAutocomplete: React.FC<{
           : " inputAutocomplete-styleLight")
       }
       id={id}
-      onBlur={() => setListOpen(false)}
+      onBlur={() => openList(false)}
     >
       <input
         data-testid="input"
@@ -191,12 +279,12 @@ const InputAutocomplete: React.FC<{
 
           if (minCharacterCount) {
             if (e.currentTarget.value.length >= minCharacterCount) {
-              setListOpen(true);
+              openList(true);
             } else {
-              setListOpen(false);
+              openList(false);
             }
           } else {
-            setListOpen(true);
+            openList(true);
           }
         }}
         value={input}

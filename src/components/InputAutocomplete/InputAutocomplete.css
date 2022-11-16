@@ -106,7 +106,7 @@
   align-items: center;
 }
 
-.inputAutocomplete-list-element:hover {
+.inputAutocomplete-list-element-cursor {
   background-color: var(--inputAutocomplete-selectedColor);
 }
 

@@ -206,3 +206,94 @@ test("internal: no results is displayed in list if there is no match", async () 
     screen.queryByText("no results", { exact: false })
   ).toBeInTheDocument();
 });
+
+test("internal: keyboard controls working for browsing and selecting from the list", async () => {
+  const options: AutocompleteOption[] = [
+    { label: "AAA" },
+    { label: "AAB" },
+    { label: "AAC" },
+    { label: "ABA" },
+    { label: "ABB" },
+    { label: "ABC" },
+  ];
+
+  const component = render(<InputAutocomplete options={options} />);
+  userEvent.type(component.getByTestId("input"), "A");
+  await component.findByTestId("list");
+
+  //Arrow down -> first element is selected
+  userEvent.keyboard("{ArrowDown}");
+  expect(component.queryByTestId("list")?.children[0]).toHaveClass(
+    "inputAutocomplete-list-element-cursor",
+    { exact: false }
+  );
+  //Arrow down -> second element is selected
+  userEvent.keyboard("{ArrowDown}");
+  expect(component.queryByTestId("list")?.children[1]).toHaveClass(
+    "inputAutocomplete-list-element-cursor",
+    { exact: false }
+  );
+
+  //Arrow up -> first element is selected again
+  userEvent.keyboard("{ArrowUp}");
+  expect(component.queryByTestId("list")?.children[0]).toHaveClass(
+    "inputAutocomplete-list-element-cursor",
+    { exact: false }
+  );
+
+  //press return -> input should be AAA
+  userEvent.keyboard("{Return}");
+  expect(component.queryByTestId("input")?.getAttribute("value")).toBe("AAA");
+  //and list closed
+  expect(component.queryByTestId("list")).not.toBeInTheDocument();
+
+  //delete all input
+  userEvent.type(component.getByTestId("input"), "{selectall}{Delete}");
+
+  //input A again
+  userEvent.type(component.getByTestId("input"), "A");
+  await component.findByTestId("list");
+
+  //arrow down -> first element is selected
+  userEvent.keyboard("{ArrowDown}");
+  expect(component.queryByTestId("list")?.children[0]).toHaveClass(
+    "inputAutocomplete-list-element-cursor",
+    { exact: false }
+  );
+
+  //press enter -> input should be AAA
+  userEvent.keyboard("{Enter}");
+  expect(component.queryByTestId("input")?.getAttribute("value")).toBe("AAA");
+  //and list closed
+  expect(component.queryByTestId("list")).not.toBeInTheDocument();
+
+  //delete all input
+  userEvent.type(component.getByTestId("input"), "{selectall}{Delete}");
+
+  //input A again
+  userEvent.type(component.getByTestId("input"), "A");
+  await component.findByTestId("list");
+
+  //escape -> list should close
+  userEvent.keyboard("{Escape}");
+  expect(component.queryByTestId("list")).not.toBeInTheDocument();
+});
+
+test("internal: click on list item performs the needed action", async () => {
+  const options: AutocompleteOption[] = [{ label: "AAA" }, { label: "AAB" }];
+
+  const component = render(<InputAutocomplete options={options} />);
+  userEvent.type(component.getByTestId("input"), "AA");
+  await component.findByTestId("list");
+
+  //hover -> second element should be selected
+  userEvent.hover(component.getByTestId("list").children[1]);
+  expect(component.queryByTestId("list")?.children[1]).toHaveClass(
+    "inputAutocomplete-list-element-cursor",
+    { exact: false }
+  );
+
+  //click -> input should be AAB
+  userEvent.click(component.getByTestId("list").children[1]);
+  expect(component.queryByTestId("input")?.getAttribute("value")).toBe("AAB");
+});
