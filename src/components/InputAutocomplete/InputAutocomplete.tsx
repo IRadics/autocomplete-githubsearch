@@ -42,6 +42,13 @@ const InputAutocomplete: React.FC<{
   darkMode?: boolean;
   minCharacterCount?: number;
   maxListedSuggestions?: number;
+  matchMode?:
+    | "exact"
+    | "beginning"
+    | "any"
+    | "exact-caseSensitive"
+    | "beginning-caseSensitive"
+    | "any-caseSensitive";
 }> = ({
   options,
   placeholder,
@@ -56,6 +63,7 @@ const InputAutocomplete: React.FC<{
   darkMode,
   minCharacterCount,
   maxListedSuggestions,
+  matchMode = "beginning",
 }) => {
   const [listOpen, setListOpen] = useState<boolean>(false);
   const [input, setInput] = useState<string>("");
@@ -71,16 +79,48 @@ const InputAutocomplete: React.FC<{
   }, []);
 
   const filteredOptions = useMemo(() => {
-    let filtered = options.filter(
-      (o) =>
-        o.label.slice(0, input.length).toLowerCase() === input.toLowerCase()
-    );
+    let filtered: AutocompleteOption[] = [];
+
+    switch (matchMode) {
+      case "exact":
+        filtered = options.filter(
+          (o) => o.label.toLowerCase() === input.toLowerCase()
+        );
+        break;
+
+      case "exact-caseSensitive":
+        filtered = options.filter((o) => o.label === input);
+        break;
+
+      case "beginning":
+        filtered = options.filter(
+          (o) =>
+            o.label.slice(0, input.length).toLowerCase() === input.toLowerCase()
+        );
+        break;
+
+      case "beginning-caseSensitive":
+        filtered = options.filter(
+          (o) => o.label.slice(0, input.length) === input
+        );
+        break;
+
+      case "any":
+        filtered = options.filter((o) =>
+          o.label.toLowerCase().includes(input.toLowerCase())
+        );
+        break;
+
+      case "any-caseSensitive":
+        filtered = options.filter((o) => o.label.includes(input));
+        break;
+    }
 
     if (sortMethod) filtered = filtered.sort(sortMethod);
     if (maxListedSuggestions)
       filtered = filtered.slice(0, maxListedSuggestions);
     return filtered;
-  }, [input, options, sortMethod, maxListedSuggestions]);
+  }, [input, options, sortMethod, maxListedSuggestions, matchMode]);
 
   const onSelectDefault = (option: AutocompleteOption) => {
     setInput(option.label);
