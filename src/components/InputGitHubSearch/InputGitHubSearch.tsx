@@ -1,6 +1,11 @@
 import { useRef, useState } from "react";
-import gitHubSearchRepository from "../../rest/gitHub/search/repository/gitHubSearchRepository";
-import gitHubSearchUser from "../../rest/gitHub/search/users/gitHubSearchUser";
+import {
+  OrganizationMinFragment,
+  RespositoryMinFragment,
+  UserMinFragment,
+  useSearchProfilesLazyQuery,
+  useSearchRepositoryLazyQuery,
+} from "../../graphql/generated-types";
 import InputAutocomplete from "../InputAutocomplete/InputAutocomplete";
 import { AutocompleteOption } from "../InputAutocomplete/InputAutocomplete.types";
 const InputGitHubSearch: React.FC<{
@@ -16,53 +21,61 @@ const InputGitHubSearch: React.FC<{
   const timeoutHandler = useRef<NodeJS.Timeout>();
   const [options, setOptions] = useState<AutocompleteOption[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [hasError, setHasError] = useState<boolean>(false);
+
+  const [
+    searchProfiles,
+    { loading: loadingSearchProfiles, error: errorSearchProfiles },
+  ] = useSearchProfilesLazyQuery();
+  const [
+    searchRepositories,
+    { loading: loadingSearchRepository, error: errorSearchRepository },
+  ] = useSearchRepositoryLazyQuery();
 
   const search = async (query: string) => {
-    const userSearch = gitHubSearchUser(query, { "in:login": true }, "", "", {
-      per_page: 50,
+    const userSearch = searchProfiles({
+      variables: { query: query, first: 50 },
+      fetchPolicy: "cache-first",
     });
-    const repoSearch = gitHubSearchRepository(
-      query,
-      { "in:name": true, fork: false, "is:public": true, archived: false },
-      "",
-      "",
-      { per_page: 50 }
-    );
-    await Promise.all([userSearch, repoSearch])
+    const repoSearch = searchRepositories({
+      variables: { query: query, first: 50 },
+      fetchPolicy: "cache-first",
+    });
 
-      .then((values) => {
-        //check if the input is still the same
-        if (query === searchInput.current) {
-          const [userResults, repoResults] = values;
-          let options: AutocompleteOption[] = [];
+    await Promise.all([userSearch, repoSearch]).then((values) => {
+      //check if the input is still the same
+      if (
+        values[0].variables?.query === searchInput.current &&
+        values[1].variables?.query === searchInput.current
+      ) {
+        setIsLoading(false);
+        const userResults = values[0].data?.search.nodes as UserMinFragment[] &
+          OrganizationMinFragment[];
+        const repoResults = values[1].data?.search
+          .nodes as RespositoryMinFragment[];
 
-          userResults.items.forEach((user) => {
-            options.push({
-              label: user.login,
-              labelSecondary: user.type,
-              key: user.html_url,
-            });
+        let options: AutocompleteOption[] = [];
+
+        userResults.forEach((user) => {
+          options.push({
+            label: user.login,
+            labelSecondary: user.__typename,
+            key: user.url,
           });
-          repoResults.items.forEach((repo) => {
-            options.push({
-              label: repo.name,
-              labelSecondary: repo.full_name,
-              key: repo.html_url,
-            });
+        });
+        repoResults.forEach((repo) => {
+          options.push({
+            label: repo.name,
+            labelSecondary: repo.nameWithOwner,
+            key: repo.url,
           });
+        });
 
-          setIsLoading(false);
-          setOptions(options);
-        }
-      })
-      .catch(() => {
-        setHasError(true);
-      });
+        setOptions(options);
+      }
+    });
   };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setHasError(false);
     if (timeoutHandler.current) {
       clearTimeout(timeoutHandler.current);
     }
@@ -82,7 +95,11 @@ const InputGitHubSearch: React.FC<{
   return (
     <InputAutocomplete
       maxListedSuggestions={50}
-      errorList={hasError ? "Error fetching GitHub data" : ""}
+      errorList={
+        errorSearchProfiles || errorSearchRepository
+          ? "Error fetching GitHub data"
+          : ""
+      }
       onSelect={(o) => {
         window.open(o.key, "_blank");
       }}
@@ -93,7 +110,7 @@ const InputGitHubSearch: React.FC<{
       placeholder={placeholder}
       id={id}
       classes={classes}
-      loading={isLoading}
+      loading={loadingSearchProfiles || loadingSearchRepository || isLoading}
       sortMethod={(a, b) => {
         return a.label.localeCompare(b.label);
       }}

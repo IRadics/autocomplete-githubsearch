@@ -1,0 +1,5 @@
+fragment organizationMin on Organization {
+  id
+  login
+  url
+}

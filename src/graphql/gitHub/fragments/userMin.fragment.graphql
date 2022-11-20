@@ -1,0 +1,5 @@
+fragment userMin on User {
+  id
+  login
+  url
+}

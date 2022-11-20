@@ -1,0 +1,11 @@
+fragment respositoryMin on Repository {
+  name
+  nameWithOwner
+  url
+  primaryLanguage {
+    id
+    ... on Language {
+      name
+    }
+  }
+}

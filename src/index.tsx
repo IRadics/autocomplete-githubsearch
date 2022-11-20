@@ -1,15 +1,35 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import App from "./App";
+import reportWebVitals from "./reportWebVitals";
+import {
+  createHttpLink,
+  InMemoryCache,
+  ApolloClient,
+  ApolloProvider,
+} from "@apollo/client";
 
 const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
+  document.getElementById("root") as HTMLElement
 );
+
+const gitHubLink = createHttpLink({
+  uri: "https://api.github.com/graphql",
+  headers: {
+    authorization: "bearer " + process.env.REACT_APP_GITHUB_TOKEN_CLASSIC,
+  },
+});
+
+const apolloClient = new ApolloClient({
+  link: gitHubLink,
+  cache: new InMemoryCache(),
+});
 root.render(
   <React.StrictMode>
-    <App />
+    <ApolloProvider client={apolloClient}>
+      <App />
+    </ApolloProvider>
   </React.StrictMode>
 );
 
