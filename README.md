@@ -1,3 +1,14 @@
+### Autcomplete input component with GitHub user and repository search functionality using GitHub REST API - created as a coding challenge for interview
+
+React TypeScript application (via Create React App)
+
+Additional library used for the project:
+* [lodash](https://lodash.com/)
+
+| Environment Variable   	| Description                                                                                                                                                                                                                 	|
+|------------------------	|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------	|
+| REACT_APP_GITHUB_TOKEN 	| GitHub access token. Not required, but recommended as it increases the rate limit from 10 requests per minute to 30 requests. Also recommended to create the new [Fine-grained Personal Access token](https://github.com/settings/tokens?type=beta) for better security 	|
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
