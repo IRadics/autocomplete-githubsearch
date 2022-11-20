@@ -10,6 +10,7 @@
   --inputAutocomplete-labelSecondaryColor: rgb(155, 155, 155);
   --inputAutocomplete-accentColor: rgb(3, 53, 110);
   --inputAutocomplete-errorColor: rgb(255, 0, 0);
+  --inputAutocomplete-loadingSpinnerBaseColor: rgb(207, 207, 207);
   color-scheme: light;
 }
 
@@ -20,6 +21,7 @@
   --inputAutocomplete-labelSecondaryColor: rgb(65, 65, 65);
   --inputAutocomplete-accentColor: rgb(89, 11, 178);
   --inputAutocomplete-errorColor: rgb(179, 0, 0);
+  --inputAutocomplete-loadingSpinnerBaseColor: rgb(255, 255, 255);
   color-scheme: dark;
 }
 
@@ -82,7 +84,7 @@
 .inputAutocomplete-list-element-loading {
   width: 1rem;
   height: 1rem;
-  border: 5px solid var(--inputAutocomplete-labelColor);
+  border: 5px solid var(--inputAutocomplete-loadingSpinnerBaseColor);
   border-top: 5px solid var(--inputAutocomplete-accentColor);
   border-radius: 50%;
   margin: 0.5rem auto;
