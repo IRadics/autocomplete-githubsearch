@@ -19,3 +19,32 @@ export type GitHubSearchPaginationSettings = {
   /** if provided, multiple number of pages will be fetched and merged*/
   fetchMultiplePages?: number;
 };
+
+type Year = `${bigint}${bigint}${bigint}${bigint}`;
+type Month = `${bigint}${bigint}`;
+type Day = `${bigint}${bigint}`;
+type Hour = `${bigint}${bigint}`;
+type Minute = `${bigint}${bigint}`;
+type Second = `${bigint}${bigint}`;
+type UtcOffset = `+${bigint}${bigint}:${bigint}${bigint}` | "Z";
+type ShortDate = `${Year}-${Month}-${Day}`;
+type LongDate =
+  `${Year}-${Month}-${Day}T${Hour}:${Minute}:${Second}${UtcOffset}`;
+
+type GitHubSearchOperatorsComparator = ">" | "<" | "<=" | ">=";
+type GitHubSearchOperatorsRange = "..";
+
+type GitHubSearchParamWithOperator<T extends ShortDate | LongDate | bigint> =
+  | `${GitHubSearchOperatorsComparator}${T}`
+  | `${T}${GitHubSearchOperatorsRange}${T}`
+  | `${T}${GitHubSearchOperatorsRange}`;
+
+export type GitHubSearchNumberParam =
+  | GitHubSearchParamWithOperator<bigint>
+  | `${bigint}`
+  | number;
+export type GitHubSearchDateParam =
+  | GitHubSearchParamWithOperator<ShortDate>
+  | GitHubSearchParamWithOperator<LongDate>
+  | ShortDate
+  | LongDate;
