@@ -1,4 +1,4 @@
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import gitHubSearchRepository from "../../rest/gitHub/search/repository/gitHubSearchRepository";
 import gitHubSearchUser from "../../rest/gitHub/search/users/gitHubSearchUser";
 import InputAutocomplete from "../InputAutocomplete/InputAutocomplete";
