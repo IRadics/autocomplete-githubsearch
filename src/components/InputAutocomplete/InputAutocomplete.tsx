@@ -24,6 +24,7 @@ import clamp from "../../functions/clamp";
  * @property onSelect - the function to run when an item is selected from the list.
  * @property darkMode - if true, dark mode CSS class(es) is applied (-styleLight / -styleDark)
  * @property minCharacterCount - defines the minimum characters to type to open the autocomplete list
+ * @property maxListedSuggestions - limits the number of items in the autocomplete list
  * - default: the input field is filled by the selected option.
  * - note: Separate onSelect function provided for the selected option overwrites this behaviour.
  */
@@ -40,6 +41,7 @@ const InputAutocomplete: React.FC<{
   onSelect?: (selectedOption: AutocompleteOption) => void;
   darkMode?: boolean;
   minCharacterCount?: number;
+  maxListedSuggestions?: number;
 }> = ({
   options,
   placeholder,
@@ -53,6 +55,7 @@ const InputAutocomplete: React.FC<{
   onSelect,
   darkMode,
   minCharacterCount,
+  maxListedSuggestions,
 }) => {
   const [listOpen, setListOpen] = useState<boolean>(false);
   const [input, setInput] = useState<string>("");
@@ -68,20 +71,16 @@ const InputAutocomplete: React.FC<{
   }, []);
 
   const filteredOptions = useMemo(() => {
-    if (sortMethod) {
-      return options
-        .filter(
-          (o) =>
-            o.label.slice(0, input.length).toLowerCase() === input.toLowerCase()
-        )
-        .sort(sortMethod);
-    } else {
-      return options.filter(
-        (o) =>
-          o.label.slice(0, input.length).toLowerCase() === input.toLowerCase()
-      );
-    }
-  }, [input, options, sortMethod]);
+    let filtered = options.filter(
+      (o) =>
+        o.label.slice(0, input.length).toLowerCase() === input.toLowerCase()
+    );
+
+    if (sortMethod) filtered = filtered.sort(sortMethod);
+    if (maxListedSuggestions)
+      filtered = filtered.slice(0, maxListedSuggestions);
+    return filtered;
+  }, [input, options, sortMethod, maxListedSuggestions]);
 
   const onSelectDefault = (option: AutocompleteOption) => {
     setInput(option.label);
